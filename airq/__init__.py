@@ -59,7 +59,7 @@ class PasswordCrypto:
 class API:
   BASE_URL_AUTH = "https://auth.uhooinc.com/"
   BASE_URL_API = "https://api.uhooinc.com/v1/"
-  URL_LOGOUT = BASE_URL_API + ""
+  URL_LOGOUT = BASE_URL_API + "clearusersession"
   URL_GET_DATA = BASE_URL_API + "getalllatestdata"
   URL_LOGIN = BASE_URL_AUTH + "login"
   URL_GET_UID = BASE_URL_AUTH + "user"
@@ -82,6 +82,7 @@ class API:
       "User-Agent": "uHoo/8.5 (iPhone; XS; iOS 14.2; Scale/3.00)",
       "Accept-Language": "en-FI;q=1.0, fi-FI;q=0.9, de-FI;q=0.8, sv-FI;q=0.7, es-FI;q=0.6, es-419;q=0.5",
     }
+    self.login()
 
   def _get_uid(self):
     try:
@@ -150,22 +151,16 @@ class API:
         print('HTTP Request failed')
 
   def logout(self):
-    self._call(API.BASE_URL_API + "")
-    pass
+    try:
+        response = self.session.get(url=API.URL_LOGOUT)
+        print('Response HTTP Status Code: {status_code}'.format(
+            status_code=response.status_code))
+        print('Response HTTP Response Body: {content}'.format(
+            content=response.content))
+    except requests.exceptions.RequestException:
+        print('HTTP Request failed')
 
 if __name__== "__main__":
-
   api = API('', '')
-  api.login()
   api.get_data()
   #api.logout()
-
-  """
-  end result password must look like this
-  e2edfef01605cc600de7997c55336fc0da04ed13cf6ab2ee2d68be4b6bc2d3f6bb2a5f39
-  d3892c92fb76f65a4e1e8f23994aec59310c37b252414f425fce0db6d91adb003df365767d930a6981589e99
-
-  
-  e2de06f671b8f820a7433fe6170793457bb20f4b3ad4afd1f77dfdeddf98bfc02c1257df58ef8eb1bcfc4a52
-
-  """

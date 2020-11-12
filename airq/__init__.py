@@ -59,6 +59,11 @@ class PasswordCrypto:
 class API:
   BASE_URL_AUTH = "https://auth.uhooinc.com/"
   BASE_URL_API = "https://api.uhooinc.com/v1/"
+  URL_LOGOUT = BASE_URL_API + ""
+  URL_GET_DATA = BASE_URL_API + "getalllatestdata"
+  URL_LOGIN = BASE_URL_AUTH + "login"
+  URL_GET_UID = BASE_URL_AUTH + "user"
+  URL_GET_CLIENT_CODE = BASE_URL_AUTH + "verifyemail"
   CLIENT_ID = ""
 
   def __init__(self, username, password):
@@ -68,18 +73,19 @@ class API:
     self.refreshToken = None
     self.uid = None
     self.clientCode = None
-
-  def _call(self, url="", method="POST", **kwargs):
-    return requests.request(method, url, **kwargs)
+    self.session = requests.Session()
+    self.session.headers = {
+      "Accept": "*/*",
+      "Host": "auth.uhooinc.com",
+      "If-None-Match": "W/\"59-lnUAz2k+ZYhT0jjdJV1ylA\"",
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": "uHoo/8.5 (iPhone; XS; iOS 14.2; Scale/3.00)",
+      "Accept-Language": "en-FI;q=1.0, fi-FI;q=0.9, de-FI;q=0.8, sv-FI;q=0.7, es-FI;q=0.6, es-419;q=0.5",
+    }
 
   def _get_uid(self):
     try:
-        response = requests.get(
-            url="https://auth.uhooinc.com/user",
-            headers={
-                "Cookie": "uhoo.sid=s%3As4j2dBbkbg0vXa10iqMHauJBL09TH779.V%2FnuBucub%2B5ylNCnFqXg6CCQwDxbwmXglfuEnvSGVA4",
-            },
-        )
+        response = self.session.get(url=API.URL_GET_UID)
         print('Response HTTP Status Code: {status_code}'.format(
             status_code=response.status_code))
         print('Response HTTP Response Body: {content}'.format(
@@ -90,17 +96,8 @@ class API:
 
   def _get_client_code(self):
     try:
-        response = requests.post(
-            url="https://auth.uhooinc.com/verifyemail",
-            headers={
-                "Accept": "*/*",
-                "If-None-Match": "W/\"59-lnUAz2k+ZYhT0jjdJV1ylA\"",
-                "Accept-Language": "en-FI;q=1.0, fi-FI;q=0.9, de-FI;q=0.8, sv-FI;q=0.7, es-FI;q=0.6, es-419;q=0.5",
-                "User-Agent": "uHoo/8.5 (iPhone; XS; iOS 14.2; Scale/3.00)",
-                "Host": "auth.uhooinc.com",
-                "Content-Type": "application/x-www-form-urlencoded",
-                "Cookie": "uhoo.sid=s%3AD3ZHbTdyXfFPVYMBSf1SEYF170pKVx7y.P5qGKddx95kOSbZbQjmUdvJ0xlHI6YJFypSdCciLETI",
-            },
+        response = self.session.post(
+            url=API.URL_GET_CLIENT_CODE,
             data={
                 "clientId": API.CLIENT_ID,
                 "username": self.username,
@@ -115,22 +112,14 @@ class API:
         print('HTTP Request failed')
 
   def login(self):
+    # FIXME uid and code should only be done once or if session expired
     self._get_uid()
     self._get_client_code()
-    crypto = PasswordCrypto(self.clientCode) # The length of the key here must be a multiple of 16.
+    crypto = PasswordCrypto(self.clientCode)
     passwordEncrypted = crypto.encrypt(self.uid, self.password).hex()
     try:
-        response = requests.post(
-            url="https://auth.uhooinc.com/login",
-            headers={
-                "Content-Type": "application/x-www-form-urlencoded",
-                "Host": "auth.uhooinc.com",
-                "User-Agent": "uHoo/8.5 (iPhone; XS; iOS 14.2; Scale/3.00)",
-                "If-None-Match": "W/\"181-g0fFm5C6Eguc5gXFqGxxNQ\"",
-                "Accept": "*/*",
-                "Accept-Language": "en-FI;q=1.0, fi-FI;q=0.9, de-FI;q=0.8, sv-FI;q=0.7, es-FI;q=0.6, es-419;q=0.5",
-                "Cookie": "uhoo.sid=s%3Ap1sv3IZNCIzAS_wNfldiAhvnJM3Lp7xG.hUMP44smYND20i%2FDHhwLXM%2FJjYnxaanAS2n79gYRzgI",
-            },
+        response = self.session.post(
+            url=API.URL_LOGIN,
             data={
                 "clientId": API.CLIENT_ID,
                 "username": self.username,
@@ -144,24 +133,15 @@ class API:
         data = response.json()
         self.token = data['token']
         self.refreshToken = data['refreshToken']
+        self.session.headers.update({
+          "Authorization": "Bearer " + self.refreshToken,
+        })
     except requests.exceptions.RequestException:
         print('HTTP Request failed')
 
   def get_data(self):
     try:
-        response = requests.get(
-            url="https://api.uhooinc.com/v1/getalllatestdata",
-            headers={
-                "If-None-Match": "W/\"5e4-+882oSbl5AYaIQNdHKHKAw\"",
-                "Host": "api.uhooinc.com",
-                "Authorization": "Bearer " + self.refreshToken,
-                "User-Agent": "uHoo/8.5 (iPhone; XS; iOS 14.2; Scale/3.00)",
-                "Accept": "*/*",
-                "Content-Type": "application/x-www-form-urlencoded",
-                "Accept-Language": "en-FI;q=1.0, fi-FI;q=0.9, de-FI;q=0.8, sv-FI;q=0.7, es-FI;q=0.6, es-419;q=0.5",
-                "Cookie": "uhoo.sid=",
-            },
-        )
+        response = self.session.get(url=API.URL_GET_DATA)
         print('Response HTTP Status Code: {status_code}'.format(
             status_code=response.status_code))
         print('Response HTTP Response Body: {content}'.format(

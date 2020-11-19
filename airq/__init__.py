@@ -5,6 +5,9 @@ from Crypto import Random
 import codecs
 import hashlib
 import requests
+import pickle
+import os
+from urllib3.exceptions import InsecureRequestWarning
 
 """ 
   input
@@ -63,37 +66,75 @@ class API:
   URL_GET_DATA = BASE_URL_API + "getalllatestdata"
   URL_LOGIN = BASE_URL_AUTH + "login"
   URL_GET_UID = BASE_URL_AUTH + "user"
+  URL_RENEW_TOKEN = BASE_URL_AUTH + "renewusertoken"
   URL_GET_CLIENT_CODE = BASE_URL_AUTH + "verifyemail"
   CLIENT_ID = ""
+  SESSION_FILE = "session"
 
-  def __init__(self, username, password):
+  # these are for storing session info on disk
+  UID_HEADER = "X-AIRQ-UID"
+  CODE_HEADER = "X-AIRQ-CODE"
+  TOKEN_HEADER = "X-AIRQ-TOKEN"
+
+  def __init__(self, username, password, forceLogin=False):
     self.username = username
     self.password = password
-    self.token = None
-    self.refreshToken = None
-    self.uid = None
-    self.clientCode = None
-    self.session = requests.Session()
-    self.session.headers = {
-      "Accept": "*/*",
-      "Host": "auth.uhooinc.com",
-      "If-None-Match": "W/\"59-lnUAz2k+ZYhT0jjdJV1ylA\"",
-      "Content-Type": "application/x-www-form-urlencoded",
-      "User-Agent": "uHoo/8.5 (iPhone; XS; iOS 14.2; Scale/3.00)",
-      "Accept-Language": "en-FI;q=1.0, fi-FI;q=0.9, de-FI;q=0.8, sv-FI;q=0.7, es-FI;q=0.6, es-419;q=0.5",
-    }
-    self.login()
+    # self.token = None
+    # self.refreshToken = None
+    self.newSession = True
+    self.session = self._get_session(forceLogin)
+    if self.newSession: self.login()
+
+  def _get_session(self, forceLogin):
+    if os.path.exists(API.SESSION_FILE) and not forceLogin:
+      try:
+        with open(API.SESSION_FILE, 'rb') as f:
+          session = pickle.load(f)
+        self.newSession = False
+        print('session loaded')
+      except:
+        print('session loading failed')
+        return self._get_session(True)
+    else:
+      session = requests.Session()
+      session.verify = False
+      session.headers = {
+        "Accept": "*/*",
+        "Host": "auth.uhooinc.com",
+        "If-None-Match": "W/\"59-lnUAz2k+ZYhT0jjdJV1ylA\"",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "uHoo/8.5 (iPhone; XS; iOS 14.2; Scale/3.00)",
+        "Accept-Language": "en-FI;q=1.0, fi-FI;q=0.9, de-FI;q=0.8, sv-FI;q=0.7, es-FI;q=0.6, es-419;q=0.5",
+      }
+      print('session created')
+    return session
+
+  def _save_session(self):
+    with open(API.SESSION_FILE, 'wb') as f:
+      pickle.dump(self.session, f)
+    print('session saved')
+
+  def _log_response(self, response):
+    # shows you queries results: 0 = off, 1 = code, 2 = body, 3 = headers
+    log_level = 3
+    if log_level > 0:
+        label = response.url[response.url.rindex('/')+1:]
+        print('[{label}] Response HTTP Status Code: {status_code}'.format(
+            label=label, status_code=response.status_code))
+    if log_level > 1:
+        print('[{label}] Response HTTP Response Body: {content}'.format(
+            label=label, content=response.content))
+    if log_level > 2:
+        print('[{label}] Response HTTP Response Headers: {content}'.format(
+            label=label, content=response.headers))
 
   def _get_uid(self):
     try:
         response = self.session.get(url=API.URL_GET_UID)
-        print('Response HTTP Status Code: {status_code}'.format(
-            status_code=response.status_code))
-        print('Response HTTP Response Body: {content}'.format(
-            content=response.content))
-        self.uid = response.json()['uId']
-    except requests.exceptions.RequestException:
-        print('HTTP Request failed')
+        self._log_response(response)
+        self.session.headers.update({API.UID_HEADER: response.json()['uId']})
+    except requests.exceptions.RequestException as e:
+        print('HTTP Request failed: ' + str(e))
 
   def _get_client_code(self):
     try:
@@ -104,20 +145,30 @@ class API:
                 "username": self.username,
             },
         )
-        print('Response HTTP Status Code: {status_code}'.format(
-            status_code=response.status_code))
-        print('Response HTTP Response Body: {content}'.format(
-            content=response.content))
-        self.clientCode = response.json()['code']
-    except requests.exceptions.RequestException:
-        print('HTTP Request failed')
+        self._log_response(response)
+        self.session.headers.update({API.CODE_HEADER: response.json()['code']})
+    except requests.exceptions.RequestException as e:
+        print('HTTP Request failed: ' + str(e))
+  
+  def _renew_token(self):
+    try:
+        response = self.session.post(
+            url=API.URL_RENEW_TOKEN,
+            data={
+                "Token": self.session.headers.get(API.TOKEN_HEADER),
+                "userDeviceId": API.CLIENT_ID,
+            },
+        )
+        self._log_response(response)
+        self.session.headers.update({"Authorization": "Bearer " + response.json()['refreshToken']})
+    except requests.exceptions.RequestException as e:
+        print('HTTP Request failed: ' + str(e))
 
   def login(self):
-    # FIXME uid and code should only be done once or if session expired
     self._get_uid()
     self._get_client_code()
-    crypto = PasswordCrypto(self.clientCode)
-    passwordEncrypted = crypto.encrypt(self.uid, self.password).hex()
+    crypto = PasswordCrypto(self.session.headers.get(API.CODE_HEADER))
+    passwordEncrypted = crypto.encrypt(self.session.headers.get(API.UID_HEADER), self.password).hex()
     try:
         response = self.session.post(
             url=API.URL_LOGIN,
@@ -127,40 +178,38 @@ class API:
                 "password": passwordEncrypted,
             },
         )
-        print('Response HTTP Status Code: {status_code}'.format(
-            status_code=response.status_code))
-        print('Response HTTP Response Body: {content}'.format(
-            content=response.content))
+        self._log_response(response)
         data = response.json()
-        self.token = data['token']
-        self.refreshToken = data['refreshToken']
         self.session.headers.update({
-          "Authorization": "Bearer " + self.refreshToken,
+          API.TOKEN_HEADER: data['token'],
+          "Authorization": "Bearer " + data['refreshToken'],
         })
-    except requests.exceptions.RequestException:
-        print('HTTP Request failed')
+        self._save_session()
+    except requests.exceptions.RequestException as e:
+        print('HTTP Request failed: ' + str(e))
 
-  def get_data(self):
+  def get_data(self, retry=True):
     try:
         response = self.session.get(url=API.URL_GET_DATA)
-        print('Response HTTP Status Code: {status_code}'.format(
-            status_code=response.status_code))
-        print('Response HTTP Response Body: {content}'.format(
-            content=response.content))
-    except requests.exceptions.RequestException:
-        print('HTTP Request failed')
+        self._log_response(response)
+        if response.status_code == 401 and retry == True:
+          self._renew_token()
+          response = self.get_data(False)
+        return response
+    except requests.exceptions.RequestException as e:
+        print('HTTP Request failed: ' + str(e))
 
   def logout(self):
     try:
         response = self.session.get(url=API.URL_LOGOUT)
-        print('Response HTTP Status Code: {status_code}'.format(
-            status_code=response.status_code))
-        print('Response HTTP Response Body: {content}'.format(
-            content=response.content))
-    except requests.exceptions.RequestException:
-        print('HTTP Request failed')
+        self.session.headers.pop()
+        self._log_response(response)
+    except requests.exceptions.RequestException as e:
+        print('HTTP Request failed: ' + str(e))
 
 if __name__== "__main__":
+  requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+
   api = API('', '')
   api.get_data()
   #api.logout()

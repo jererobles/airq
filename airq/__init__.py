@@ -6,6 +6,7 @@ import codecs
 import hashlib
 import requests
 import pickle
+import json
 import os
 from urllib3.exceptions import InsecureRequestWarning
 
@@ -91,9 +92,7 @@ class API:
         with open(API.SESSION_FILE, 'rb') as f:
           session = pickle.load(f)
         self.newSession = False
-        print('session loaded')
       except:
-        print('session loading failed')
         return self._get_session(True)
     else:
       session = requests.Session()
@@ -106,17 +105,15 @@ class API:
         "User-Agent": "uHoo/8.5 (iPhone; XS; iOS 14.2; Scale/3.00)",
         "Accept-Language": "en-FI;q=1.0, fi-FI;q=0.9, de-FI;q=0.8, sv-FI;q=0.7, es-FI;q=0.6, es-419;q=0.5",
       }
-      print('session created')
     return session
 
   def _save_session(self):
     with open(API.SESSION_FILE, 'wb') as f:
       pickle.dump(self.session, f)
-    print('session saved')
 
   def _log_response(self, response):
     # shows you queries results: 0 = off, 1 = code, 2 = body, 3 = headers
-    log_level = 3
+    log_level = 0
     if log_level > 0:
         label = response.url[response.url.rindex('/')+1:]
         print('[{label}] Response HTTP Status Code: {status_code}'.format(
@@ -125,6 +122,8 @@ class API:
         print('[{label}] Response HTTP Response Body: {content}'.format(
             label=label, content=response.content))
     if log_level > 2:
+        print('[{label}] Request HTTP Headers: {content}'.format(
+            label=label, content=response.request.headers))
         print('[{label}] Response HTTP Response Headers: {content}'.format(
             label=label, content=response.headers))
 
@@ -160,7 +159,11 @@ class API:
             },
         )
         self._log_response(response)
-        self.session.headers.update({"Authorization": "Bearer " + response.json()['refreshToken']})
+        data = response.json()
+        self.session.headers.update({
+          API.TOKEN_HEADER: data['token'],
+          "Authorization": "Bearer " + data['refreshToken'],
+        })
     except requests.exceptions.RequestException as e:
         print('HTTP Request failed: ' + str(e))
 
@@ -188,13 +191,13 @@ class API:
     except requests.exceptions.RequestException as e:
         print('HTTP Request failed: ' + str(e))
 
-  def get_data(self, retry=True):
+  def get_data(self, retry=0):
     try:
         response = self.session.get(url=API.URL_GET_DATA)
         self._log_response(response)
-        if response.status_code == 401 and retry == True:
+        if (response.status_code == 401 or response.status_code == 403) and retry < 2:
           self._renew_token()
-          response = self.get_data(False)
+          response = self.get_data(retry+1)
         return response
     except requests.exceptions.RequestException as e:
         print('HTTP Request failed: ' + str(e))
@@ -211,5 +214,6 @@ if __name__== "__main__":
   requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
   api = API('', '')
-  api.get_data()
+  data = api.get_data()
+  print(json.dumps(data.json(), indent=1))
   #api.logout()

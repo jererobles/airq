@@ -1,13 +1,16 @@
 __version__ = '0.1.0'
 
+import os
 import json
 import rumps
 import consts
+from dotenv import load_dotenv
 from datetime import datetime
 from api import API
 
-USERNAME=''
-PASSWORD=''
+load_dotenv()
+USERNAME=os.getenv('USERNAME')
+PASSWORD=os.getenv('PASSWORD')
 
 class App(rumps.App):
   def __init__(self, api):

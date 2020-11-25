@@ -10,6 +10,7 @@ pylint = "^2.6.0"
 pycryptodome = "^3.9.9"
 requests = "^2.24.0"
 rumps = "^0.3.0"
+python-dotenv = "^0.15.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^4.6"

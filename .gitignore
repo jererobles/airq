@@ -1,2 +1,4 @@
 .vscode/settings.json
+airq/.env
 session
+airq/__pycache__

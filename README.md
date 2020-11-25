@@ -2,6 +2,8 @@
 
 Access uHoo Air data stored in your account.
 
+:::image type="content" source="airq.png" alt-text="screenshot":::
+
 ## TODO
 - [x] create initial login script by reversing authentication
 - [x] create class to interface with API

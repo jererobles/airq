@@ -2,7 +2,8 @@
 
 Access uHoo Air data stored in your account.
 
-![screenshot](airq.png)
+<img alt="screenshot" src="airq.png" width="280">
+
 
 ## TODO
 - [x] create initial login script by reversing authentication

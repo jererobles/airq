@@ -74,15 +74,15 @@ class API:
     if log_level > 0:
         label = response.url[response.url.rindex('/')+1:]
         print('[{label}] Response HTTP Status Code: {status_code}'.format(
-            label=label, status_code=response.status_code))
+            label=label, status_code=response.status_code), flush=True)
     if log_level > 1:
         print('[{label}] Response HTTP Response Body: {content}'.format(
-            label=label, content=response.content))
+            label=label, content=response.content), flush=True)
     if log_level > 2:
         print('[{label}] Request HTTP Headers: {content}'.format(
-            label=label, content=response.request.headers))
+            label=label, content=response.request.headers), flush=True)
         print('[{label}] Response HTTP Response Headers: {content}'.format(
-            label=label, content=response.headers))
+            label=label, content=response.headers), flush=True)
 
   def _get_uid(self):
     try:

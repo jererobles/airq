@@ -11,6 +11,7 @@ pycryptodome = "^3.9.9"
 requests = "^2.24.0"
 rumps = "^0.3.0"
 python-dotenv = "^0.15.0"
+py2app = "^0.23"
 
 [tool.poetry.dev-dependencies]
 pytest = "^4.6"

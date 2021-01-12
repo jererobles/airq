@@ -38,4 +38,4 @@ AirQ will create a `session` file in the app directory to keep refresh tokens an
 - [x] use sessions to avoid handling cookies manually
 - [x] persist session after script terminates
 - [x] do something with data
-- [ ] make binaries
+- [x] make binaries

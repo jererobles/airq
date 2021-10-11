@@ -7,9 +7,16 @@ Access uHoo Air data stored in your account.
 ## Run
 
 ```
+$ # clone and install airq
 $ git clone git@github.com:jererobles/airq.git && cd airq
 $ poetry install
-$ poetry run python src/__init__.py
+
+$ # create .env with userId + password
+$ cp .env.example .env
+$ nano .env
+
+$ # run the venv
+$ poetry run python airq/__main__.py
 ```
 
 AirQ will create a `session` file in the app directory to keep refresh tokens and avoid unnecessary requests to the uHoo API.

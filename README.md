@@ -5,7 +5,7 @@ A macOS app that runs on the menu bar and shows air quality from your [uHoo devi
 
 ## Run
 
-```
+```bash
 $ # clone and install airq
 $ git clone git@github.com:jererobles/airq.git && cd airq
 $ poetry install
@@ -19,6 +19,12 @@ $ poetry run python airq/__main__.py
 ```
 
 AirQ will create a `session` file in the app directory to keep refresh tokens and avoid unnecessary requests to the uHoo API.
+
+## Build
+
+```bash
+$ poetry run python setup.py py2app
+```
 
 ## Statuses
 
@@ -45,3 +51,4 @@ AirQ will create a `session` file in the app directory to keep refresh tokens an
 -   [x] persist session after script terminates
 -   [x] do something with data
 -   [x] make binaries
+-   [x] show values in menu bar

@@ -14,7 +14,7 @@ OPTIONS = {
 
 setup(
     name="AirQ",
-    version="0.1",
+    version="0.2",
     license="MIT",
     long_description=open("README.md").read(),
     app=APP,

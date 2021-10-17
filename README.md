@@ -1,7 +1,8 @@
 # AirQ
 
 A macOS app that runs on the menu bar and shows air quality from your [uHoo device](https://getuhoo.com/).
-<img alt="screenshot" src="airq.png" width="280">
+
+<img alt="screenshot" src="airq.png" width="535">
 
 ## Run
 

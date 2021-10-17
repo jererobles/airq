@@ -10,6 +10,9 @@ KEY_HUMIDITY = "humidity"
 KEY_VIRUSSCORE = "virusScore"
 KEY_TIMESTAMP = "timestamp"
 KEY_LASTFETCH = "lastfetch"
+KEY_SEPARATOR = "separator"
+
+DEFAULT_TITLE_FORMAT = "{icon} {temp} / {co2}"
 
 LABELS = {
     KEY_CO: "CO {} ppm",
@@ -22,50 +25,57 @@ LABELS = {
     KEY_PRESSURE: "Pressure {} hPa",
     KEY_HUMIDITY: "Humidity {} %",
     KEY_VIRUSSCORE: "Virus Score {}/10",
+    KEY_SEPARATOR: "--",
     KEY_TIMESTAMP: "Measured {:%H:%M:%S}",
     KEY_LASTFETCH: "Retrieved {:%H:%M:%S}",
 }
 
+GOOD_ICON = "☺️"
+
+LOADING_ICON = "⏳"
+
 ERROR_ICON = "❌"
+
+WARN_ICON = "⚠️"
 
 WARN_ICONS = {
     KEY_CO: {
-        (0, 35): "☺️",
+        (0, 35): GOOD_ICON,
         (36, 70): "😵",
         (71, 100): "☠️",
     },
     KEY_CO2: {
-        (400, 820): "☺️",
-        (821, 1500): "🤢",
+        (400, 850): GOOD_ICON,
+        (851, 1500): "🤢",
         (1501, 2500): "😵",
     },
     KEY_HUMIDITY: {
         (10, 30): "🌵",
-        (31, 50): "☺️",
+        (31, 50): GOOD_ICON,
         (51, 100): "💦",
     },
     KEY_VOC: {
-        (0, 400): "☺️",
+        (0, 400): GOOD_ICON,
         (401, 800): "😷",
         (801, 1100): "😵",
     },
     KEY_DUST: {
-        (0, 50): "☺️",
+        (0, 50): GOOD_ICON,
         (51, 100): "😷",
         (101, 200): "😵",
     },
     KEY_VIRUSSCORE: {
-        (1, 5): "☺️",
+        (1, 5): GOOD_ICON,
         (6, 8): "🦠",
         (9, 10): "😵",
     },
     KEY_PRESSURE: {
         (600, 970): "😣",
-        (971, 1030): "☺️",
+        (971, 1030): GOOD_ICON,
         (1031, 1100): "😖",
     },
     KEY_NO2: {
-        (0, 100): "☺️",
+        (0, 100): GOOD_ICON,
         (101, 250): "🫁",
         (250, 500): "😵",
     },

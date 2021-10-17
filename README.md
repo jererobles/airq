@@ -1,7 +1,6 @@
 # AirQ
 
-Access uHoo Air data stored in your account.
-
+A macOS app that runs on the menu bar and shows air quality from your [uHoo device](https://getuhoo.com/).
 <img alt="screenshot" src="airq.png" width="280">
 
 ## Run
@@ -40,9 +39,9 @@ AirQ will create a `session` file in the app directory to keep refresh tokens an
 
 ## TODO
 
-- [x] create initial login script by reversing authentication
-- [x] create class to interface with API
-- [x] use sessions to avoid handling cookies manually
-- [x] persist session after script terminates
-- [x] do something with data
-- [x] make binaries
+-   [x] create initial login script by reversing authentication
+-   [x] create class to interface with API
+-   [x] use sessions to avoid handling cookies manually
+-   [x] persist session after script terminates
+-   [x] do something with data
+-   [x] make binaries

@@ -12,10 +12,12 @@
 """
 
 import os
+import time
 import pickle
 import requests
 from urllib3.exceptions import InsecureRequestWarning
 from airq.api.crypto import Crypto
+from airq.api.storage import Storage
 
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
@@ -30,50 +32,15 @@ class Uhoo:
     URL_RENEW_TOKEN = BASE_URL_AUTH + "renewusertoken"
     URL_GET_CLIENT_CODE = BASE_URL_AUTH + "verifyemail"
     CLIENT_ID = "85E7D9B2-4876-4E2C-BFB5-87FB4918A0E42"
-    SESSION_FILE = "session"
-    USER_AGENT = "uHoo/9.1 (iPhone; XS; iOS 14.4; Scale/3.00)"
+    CACHE_FILE = "cache"
 
     # these are for storing session info on disk
     UID_HEADER = "X-AIRQ-UID"
     CODE_HEADER = "X-AIRQ-CODE"
     TOKEN_HEADER = "X-AIRQ-TOKEN"
 
-    def __init__(self, username, password, renew_login=False):
-        self.username = username
-        self.password = password
-        self.new_session = True
-        self.session = self._get_session(renew_login)
-        if self.new_session:
-            self.login()
-
-    def _get_session(self, renew_login):
-        if os.path.exists(Uhoo.SESSION_FILE) and not renew_login:
-            try:
-                with open(Uhoo.SESSION_FILE, "rb") as f:
-                    session = pickle.load(f)
-                self.new_session = False
-            except:
-                return self._get_session(True)
-        else:
-            session = requests.Session()
-            session.verify = False
-            session.headers = {
-                "Accept": "*/*",
-                "Host": "auth.uhooinc.com",
-                "If-None-Match": 'W/"59-lnUAz2k+ZYhT0jjdJV1ylA"',
-                "Content-Type": "application/x-www-form-urlencoded",
-                "User-Agent": Uhoo.USER_AGENT,
-                "Accept-Language": "en-UK;q=1.0",
-                "Accept-Encoding": "gzip;q=1.0, compress;q=0.5",
-                "Connection": "close",
-            }
-        return session
-
-    def _save_session(self):
-        with open(Uhoo.SESSION_FILE, "wb") as f:
-            pickle.dump(self.session, f)
-
-    def _log_response(self, response):
+    @staticmethod
+    def _log_response(response):
         # shows you queries results: 0 = off, 1 = code, 2 = body, 3 = headers
         log_level = 3
         if log_level > 0:
@@ -105,17 +72,29 @@ class Uhoo:
                 flush=True,
             )
 
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
+
+        self.storage = Storage()
+        # self.storage.session
+        # self.storage.sensors
+
+        self.login()
+
     def _get_uid(self):
         try:
-            response = self.session.get(url=Uhoo.URL_GET_UID)
+            response = self.storage.session.get(url=Uhoo.URL_GET_UID)
             self._log_response(response)
-            self.session.headers.update({Uhoo.UID_HEADER: response.json()["uId"]})
-        except requests.exceptions.RequestException as e:
-            print("HTTP Request failed: " + str(e))
+            self.storage.session.headers.update(
+                {Uhoo.UID_HEADER: response.json()["uId"]}
+            )
+        except requests.exceptions.RequestException as ex:
+            print("HTTP Request failed: " + str(ex))
 
     def _get_client_code(self):
         try:
-            response = self.session.post(
+            response = self.storage.session.post(
                 url=Uhoo.URL_GET_CLIENT_CODE,
                 data={
                     "clientId": Uhoo.CLIENT_ID,
@@ -123,16 +102,18 @@ class Uhoo:
                 },
             )
             self._log_response(response)
-            self.session.headers.update({Uhoo.CODE_HEADER: response.json()["code"]})
-        except requests.exceptions.RequestException as e:
-            print("HTTP Request failed: " + str(e))
+            self.storage.session.headers.update(
+                {Uhoo.CODE_HEADER: response.json()["code"]}
+            )
+        except requests.exceptions.RequestException as ex:
+            print("HTTP Request failed: " + str(ex))
 
     def _renew_token(self):
         try:
-            response = self.session.post(
+            response = self.storage.session.post(
                 url=Uhoo.URL_RENEW_TOKEN,
                 data={
-                    "Token": self.session.headers.get(Uhoo.TOKEN_HEADER),
+                    "Token": self.storage.session.headers.get(Uhoo.TOKEN_HEADER),
                     "userDeviceId": Uhoo.CLIENT_ID,
                 },
             )
@@ -141,24 +122,51 @@ class Uhoo:
                 self.login()
                 return
             data = response.json()
-            self.session.headers.update(
+            self.storage.session.headers.update(
                 {
                     Uhoo.TOKEN_HEADER: data["token"],
                     "Authorization": "Bearer " + data["refreshToken"],
                 }
             )
+        except requests.exceptions.RequestException as ex:
+            print("HTTP Request failed: " + str(ex))
+
+    def _get_data(self, retry=0):
+        try:
+            response = self.storage.session.get(url=Uhoo.URL_GET_DATA)
+            self._log_response(response)
+            if (
+                response.status_code == 401 or response.status_code == 403
+            ) and retry < 2:
+                self._renew_token()
+                response = self._get_data(retry + 1)
+            return response
         except requests.exceptions.RequestException as e:
-            print("HTTP Request failed: " + str(e))
+            message = "HTTP Request failed: " + str(e)
+            print(message)
+            return message
+
+    def get_data(self):
+        sensors = self.storage.sensors
+        last = sensors["time"] if sensors else 1600000000
+        now = int(time.time())
+        if now - last >= 59:
+            response = self._get_data()
+            self.storage.sensors = {
+                "data": response.json()["data"],
+                "time": now,
+            }
+        return self.storage.sensors
 
     def login(self):
         self._get_uid()
         self._get_client_code()
-        crypto = Crypto(self.session.headers.get(Uhoo.CODE_HEADER))
+        crypto = Crypto(self.storage.session.headers.get(Uhoo.CODE_HEADER))
         pass_encrypted = crypto.encrypt(
-            self.session.headers.get(Uhoo.UID_HEADER), self.password
+            self.storage.session.headers.get(Uhoo.UID_HEADER), self.password
         ).hex()
         try:
-            response = self.session.post(
+            response = self.storage.session.post(
                 url=Uhoo.URL_LOGIN,
                 data={
                     "clientId": Uhoo.CLIENT_ID,
@@ -168,35 +176,19 @@ class Uhoo:
             )
             self._log_response(response)
             data = response.json()
-            self.session.headers.update(
+            self.storage.session.headers.update(
                 {
                     Uhoo.TOKEN_HEADER: data["token"],
                     "Authorization": "Bearer " + data["refreshToken"],
                 }
             )
-            self._save_session()
         except requests.exceptions.RequestException as e:
             print("HTTP Request failed: " + str(e))
 
-    def get_data(self, retry=0):
-        try:
-            response = self.session.get(url=Uhoo.URL_GET_DATA)
-            self._log_response(response)
-            if (
-                response.status_code == 401 or response.status_code == 403
-            ) and retry < 2:
-                self._renew_token()
-                response = self.get_data(retry + 1)
-            return response
-        except requests.exceptions.RequestException as e:
-            message = "HTTP Request failed: " + str(e)
-            print(message)
-            return message
-
     def logout(self):
         try:
-            response = self.session.get(url=Uhoo.URL_LOGOUT)
-            self.session.headers.pop()
+            response = self.storage.session.get(url=Uhoo.URL_LOGOUT)
+            self.storage.session.headers.pop()
             self._log_response(response)
         except requests.exceptions.RequestException as e:
             print("HTTP Request failed: " + str(e))

@@ -11,11 +11,14 @@ from airq import consts
 
 class App(rumps.App):
     def __init__(self, api):
-        super(App, self).__init__("🏖️")
+        super().__init__(consts.LOADING_ICON)
         self.api = api
         self.last_data = None
         for key in consts.LABELS:
-            self.add_menu(key)
+            if key == consts.KEY_SEPARATOR:
+                self.menu.add(rumps.separator)
+            else:
+                self.add_menu(key)
         self.menu.add(rumps.separator)
         self.add_menu("Refresh Now...")
         self.add_menu("Debug")
@@ -33,15 +36,15 @@ class App(rumps.App):
             # HTTP error
             self.title = consts.ERROR_ICON
             return
-        self.last_data = api_response.json()["data"]
+        self.last_data = api_response["data"]
         if not self.last_data:
             # API error
             self.title = consts.ERROR_ICON
             return
-        self.update_icon(self.last_data)
-        self.update_values(self.last_data)
+        self.update_status(self.last_data)
 
-    def update_icon(self, data):
+    def update_status(self, data):
+        # warning icons
         new_icon = None
         for key, icons in consts.WARN_ICONS.items():
             value = (
@@ -49,17 +52,22 @@ class App(rumps.App):
             )
             for rang, icon in icons.items():
                 if rang[0] < value < rang[1]:
-                    if new_icon in (None, "☺️"):
+                    if new_icon in (None, consts.GOOD_ICON):
                         new_icon = icon
-                    self.warns.discard(key) if icon == "☺️" else self.warns.add(key)
+                    if icon == consts.GOOD_ICON:
+                        self.warns.discard(key)
+                    else:
+                        self.warns.add(key)
                     break
-        self.title = new_icon
 
-    def update_values(self, data):
+        # sensor values
         values = data[0]
+        formatted_values = {}
         for key, label in consts.LABELS.items():
             warningColor = None
-            if key == consts.KEY_LASTFETCH:
+            if key == consts.KEY_SEPARATOR:
+                continue
+            elif key == consts.KEY_LASTFETCH:
                 value = datetime.now()
             elif key == consts.KEY_TIMESTAMP:
                 value = datetime.fromtimestamp(values[key])
@@ -93,6 +101,7 @@ class App(rumps.App):
             string = NSAttributedString.alloc().initWithString_attributes_(new_title, attributes)
             self.menu[key]._menuitem.setAttributedTitle_(string)
 
+            
     @rumps.clicked("Debug")
     def debug(self, sender):
         rumps.Window(
@@ -100,3 +109,6 @@ class App(rumps.App):
             default_text=json.dumps(self.last_data, indent=1),
             dimensions=(600, 800),
         ).run()
+
+    def strip_sensor_name(self, formatted_value):
+        return " ".join(formatted_value.split(" ")[-2:])

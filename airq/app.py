@@ -1,8 +1,13 @@
 import json
 from datetime import datetime
 import rumps
-from airq import consts
 
+from AppKit import NSAttributedString
+from PyObjCTools.Conversion import propertyListFromPythonCollection
+from Cocoa import (NSFont, NSFontAttributeName,
+                   NSColor, NSForegroundColorAttributeName)
+
+from airq import consts
 
 class App(rumps.App):
     def __init__(self, api):
@@ -53,16 +58,40 @@ class App(rumps.App):
     def update_values(self, data):
         values = data[0]
         for key, label in consts.LABELS.items():
+            warningColor = None
             if key == consts.KEY_LASTFETCH:
                 value = datetime.now()
             elif key == consts.KEY_TIMESTAMP:
                 value = datetime.fromtimestamp(values[key])
             elif not isinstance(values[key], int):
                 value = values[key]["value"]
+                warningColor = values[key]["color"]
             else:
                 value = values[key]
-            new_title = label.format(value) + ("  ⚠️" if key in self.warns else "")
+
+            if key == consts.KEY_TEMP:
+                new_title = label.format(value, (value - 32) / 1.8)
+            else:
+                new_title = label.format(value)
             self.menu[key].title = new_title
+
+            # if key in self.warns:
+            if warningColor == 'yellow':
+                color = NSColor.colorWithCalibratedRed_green_blue_alpha_(204/255, 204/255, 0, 1)
+                font = NSFont.fontWithName_size_("Courier-Bold", 14.0)
+            elif warningColor == 'red':
+                color = NSColor.colorWithCalibratedRed_green_blue_alpha_(1, 0, 0, 1)
+                font = NSFont.fontWithName_size_("Courier-Bold", 14.0)
+            else:
+                color = NSColor.colorWithCalibratedRed_green_blue_alpha_(0, 186.0/255, 44.0/255, 1)
+                font = NSFont.fontWithName_size_("Courier", 14.0)
+
+            attributes = propertyListFromPythonCollection({
+                NSFontAttributeName: font,
+                NSForegroundColorAttributeName: color}
+                , conversionHelper=lambda x: x)
+            string = NSAttributedString.alloc().initWithString_attributes_(new_title, attributes)
+            self.menu[key]._menuitem.setAttributedTitle_(string)
 
     @rumps.clicked("Debug")
     def debug(self, sender):

@@ -63,6 +63,7 @@ class App(rumps.App):
         # sensor values
         values = data[0]
         formatted_values = {}
+        warning_values = []
         for key, label in consts.LABELS.items():
             warningColor = None
             if key == consts.KEY_SEPARATOR:
@@ -84,13 +85,14 @@ class App(rumps.App):
             self.menu[key].title = new_title
             formatted_values[key] = new_title
 
-            # if key in self.warns:
             if warningColor == 'yellow':
                 color = NSColor.colorWithCalibratedRed_green_blue_alpha_(204/255, 204/255, 0, 1)
                 font = NSFont.fontWithName_size_("Courier-Bold", 14.0)
+                warning_values = warning_values + [new_title]
             elif warningColor == 'red':
                 color = NSColor.colorWithCalibratedRed_green_blue_alpha_(1, 0, 0, 1)
                 font = NSFont.fontWithName_size_("Courier-Bold", 14.0)
+                warning_values = [new_title] + warning_values
             else:
                 color = NSColor.colorWithCalibratedRed_green_blue_alpha_(0, 186.0/255, 44.0/255, 1)
                 font = NSFont.fontWithName_size_("Courier", 14.0)
@@ -102,11 +104,16 @@ class App(rumps.App):
             string = NSAttributedString.alloc().initWithString_attributes_(new_title, attributes)
             self.menu[key]._menuitem.setAttributedTitle_(string)
 
+        # use the major changers as the second info
+        warned_sensor = formatted_values[consts.KEY_DUST].replace(" ", "")
+        if warning_values:
+            warned_sensor = warning_values[0].replace(" ", "")
+
         title_format = consts.DEFAULT_TITLE_FORMAT
         self.title = title_format.format(
             icon=new_icon,
-            temp=self.strip_sensor_name(formatted_values[consts.KEY_TEMP]),
-            co2=self.strip_sensor_name(formatted_values[consts.KEY_CO2])
+            temp=self.strip_sensor_name(formatted_values[consts.KEY_TEMP].replace(" ", "").split("/")[0]),
+            hisensor=self.strip_sensor_name(warned_sensor)
         )
             
     @rumps.clicked("Debug")
@@ -118,4 +125,4 @@ class App(rumps.App):
         ).run()
 
     def strip_sensor_name(self, formatted_value):
-        return " ".join(formatted_value.split(" ")[-2:])
+        return (" ".join(formatted_value.split(" ")[-2:])).replace(" ", "")

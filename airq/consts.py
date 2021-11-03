@@ -12,7 +12,7 @@ KEY_TIMESTAMP = "timestamp"
 KEY_LASTFETCH = "lastfetch"
 KEY_SEPARATOR = "separator"
 
-DEFAULT_TITLE_FORMAT = "{icon} {temp} / {co2}"
+DEFAULT_TITLE_FORMAT = "{icon} {temp} {hisensor}"
 
 LABELS = {
     KEY_CO:         "      CO: {} ppm",

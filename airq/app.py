@@ -82,6 +82,7 @@ class App(rumps.App):
             else:
                 new_title = label.format(value)
             self.menu[key].title = new_title
+            formatted_values[key] = new_title
 
             # if key in self.warns:
             if warningColor == 'yellow':
@@ -101,6 +102,12 @@ class App(rumps.App):
             string = NSAttributedString.alloc().initWithString_attributes_(new_title, attributes)
             self.menu[key]._menuitem.setAttributedTitle_(string)
 
+        title_format = consts.DEFAULT_TITLE_FORMAT
+        self.title = title_format.format(
+            icon=new_icon,
+            temp=self.strip_sensor_name(formatted_values[consts.KEY_TEMP]),
+            co2=self.strip_sensor_name(formatted_values[consts.KEY_CO2])
+        )
             
     @rumps.clicked("Debug")
     def debug(self, sender):

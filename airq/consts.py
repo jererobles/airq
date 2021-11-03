@@ -25,8 +25,9 @@ LABELS = {
     KEY_PRESSURE:   "Pressure: {} hPa",
     KEY_HUMIDITY:   "Humidity: {}%",
     KEY_VIRUSSCORE: "   Virus: {}/10",
+    KEY_SEPARATOR:  "--",
     KEY_TIMESTAMP:  "Measured: {:%H:%M:%S}",
-    # KEY_LASTFETCH: "Retrieved {:%H:%M:%S}",
+    KEY_LASTFETCH: "Retrieved {:%H:%M:%S}",
 }
 
 GOOD_ICON = "☺️"

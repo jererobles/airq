@@ -15,6 +15,7 @@ class App(rumps.App):
             else:
                 self.add_menu(key)
         self.menu.add(rumps.separator)
+        self.add_menu("Menu bar text...")
         self.add_menu("Refresh Now...")
         self.add_menu("Debug")
         self.warns = set()
@@ -81,6 +82,15 @@ class App(rumps.App):
             temp=self.strip_sensor_name(formatted_values[consts.KEY_TEMP]),
             co2=self.strip_sensor_name(formatted_values[consts.KEY_CO2])
         )
+
+    @rumps.clicked("Menu bar text...")
+    def menu_bar_text(self, sender):
+        rumps.Window(
+            title="AirQ Debug",
+            default_text=json.dumps(self.last_data, indent=1),
+            dimensions=(600, 800),
+        ).run()
+
     @rumps.clicked("Debug")
     def debug(self, sender):
         rumps.Window(

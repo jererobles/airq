@@ -1,0 +1,8 @@
+urllib3~=1.26.7
+requests~=2.26.0
+rumps~=0.3.0
+python-dotenv~=0.19.1
+pycryptodome
+PyObjC~=7.3
+PyCocoa
+logging

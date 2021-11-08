@@ -7,7 +7,7 @@ OPTIONS = {
     "iconfile": "icon.icns",
     "plist": {
         "LSUIElement": True,
-        "CFBundleShortVersionString": "0.1.0",
+        "CFBundleShortVersionString": "0.2.0",
     },
     "packages": ["rumps"],
 }
@@ -20,5 +20,5 @@ setup(
     app=APP,
     data_files=DATA_FILES,
     options={"py2app": OPTIONS},
-    setup_requires=["py2app"],
+    setup_requires=["py2app"]
 )

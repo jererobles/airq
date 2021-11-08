@@ -12,21 +12,21 @@ KEY_TIMESTAMP = "timestamp"
 KEY_LASTFETCH = "lastfetch"
 KEY_SEPARATOR = "separator"
 
-DEFAULT_TITLE_FORMAT = "{icon} {temp} / {co2}"
+DEFAULT_TITLE_FORMAT = "{icon} {temp} {hisensor}"
 
 LABELS = {
-    KEY_CO: "CO {} ppm",
-    KEY_CO2: "CO₂ {} ppm",
-    KEY_NO2: "NO₂ {} ppb",
-    KEY_VOC: "TVOC {} ppb",
-    KEY_DUST: "Dust {} ug/m³",
-    KEY_TEMP: "Temp {} °C",
-    KEY_OZONE: "Ozone {} ppb",
-    KEY_PRESSURE: "Pressure {} hPa",
-    KEY_HUMIDITY: "Humidity {} %",
-    KEY_VIRUSSCORE: "Virus Score {}/10",
-    KEY_SEPARATOR: "--",
-    KEY_TIMESTAMP: "Measured {:%H:%M:%S}",
+    KEY_CO:         "      CO: {} ppm",
+    KEY_CO2:        "     CO₂: {} ppm",
+    KEY_NO2:        "     NO₂: {} ppb",
+    KEY_VOC:        "    TVOC: {} ppb",
+    KEY_DUST:       "    Dust: {} ug/m³",
+    KEY_TEMP:       "    Temp: {:.1f}°F/{:.1f}°C",
+    KEY_OZONE:      "   Ozone: {} ppb",
+    KEY_PRESSURE:   "Pressure: {} hPa",
+    KEY_HUMIDITY:   "Humidity: {}%",
+    KEY_VIRUSSCORE: "   Virus: {}/10",
+    KEY_SEPARATOR:  "--",
+    KEY_TIMESTAMP:  "Measured: {:%H:%M:%S}",
     KEY_LASTFETCH: "Retrieved {:%H:%M:%S}",
 }
 
